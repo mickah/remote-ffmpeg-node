@@ -1,0 +1,27 @@
+{
+    "segment_duration":2000,
+    "encoders": {
+        "offline":{
+            "libx264":{
+                "bitrates":{
+                    "4096":16000,
+                    "1920":4800,
+                    "1280":2400,
+                    "854":1200,
+                    "640":800,
+                    "426":400
+                },
+                "options":[
+                    "-profile main",
+                    "-keyint_min %frames_by_seg%",
+                    "-g %frames_by_seg%",
+                    "-sc_threshold 0",
+                    "-b_strategy 0"
+                ]
+            }
+        },
+        "live":{
+
+        }
+    }
+}

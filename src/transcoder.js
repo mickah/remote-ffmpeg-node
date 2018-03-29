@@ -8,36 +8,74 @@ class Transcoder {
     this.codecs = "";
     this.encoders = "";
     this.filters = "";
+    this.config={};
   }
   
   // Check ressources availables
-  initialize(){
+  initialize(confFile){
+
+    console.log("Checking ffmpeg encoders \n");
+    var supported_encoders = [];
     var ffcommand = Ffmpeg();
     var self = this;
-    Ffmpeg.getAvailableFormats(function(err, formats) {
-      //console.log('Available formats:');
-      //console.dir(formats);
-      self.formats = formats;
+    
+    //Get all ffmpeg infos asynchronously
+    var formats_promise = new Promise(function(resolve, reject) {
+      Ffmpeg.getAvailableFormats(
+      function (err,data){
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      })
     });
     
-    Ffmpeg.getAvailableCodecs(function(err, codecs) {
-      //console.log('Available codecs:');
+    var codecs_promise = new Promise(function(resolve, reject) {
+      Ffmpeg.getAvailableCodecs(
+      function (err,data){
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      })
+    });
+
+    var encoders_promise = new Promise(function(resolve, reject) {
+    	// Do async job
+      Ffmpeg.getAvailableEncoders(
+        function (err,data){
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        })
+    });
+
+    var filters_promise = new Promise(function(resolve, reject) {
+    	// Do async job
+      Ffmpeg.getAvailableFilters(
+        function (err,data){
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        })
+    });
+
+    return Promise.all([formats_promise, codecs_promise, encoders_promise,filters_promise]).then(function(values) {
+      console.log(values[2]);
+      console.log("Loading configuration \n");
       //console.dir(codecs);
-      self.codecs = codecs;
-    });
-
-    Ffmpeg.getAvailableEncoders(function(err, encoders) {
-      //console.log('Available encoders:');
-      //console.dir(encoders);
-      self.encoders = encoders;
-    });
-
-    Ffmpeg.getAvailableFilters(function(err, filters) {
-      //console.log("Available filters:");
-      //console.dir(filters);
-      self.filters = filters;
-    });
-    return true;
+      self.formats = values[0];
+      self.codecs = values[1];
+      self.encoders = values[2];
+      self.filters = values[3];
+      return self.parseConfig(confFile,self.codecs);
+    })
   }
     
   //Parse transcode command
@@ -135,8 +173,50 @@ class Transcoder {
   createMP4(input,output,streams,priority, onProgression, onFinish){
   
   }
-  
-  
+
+  parseConfig(confFile, supportedEncoders){
+    var confRaw = fs.readFileSync(confFile);
+    var _config = JSON.parse(confRaw);
+
+    this.config.segment_duration = _config.segment_duration;
+    this.config.encoders = _config.encoders;
+    
+    // Extracting encoders
+    for (var key in _config.encoders.offline) {
+      if(key in supportedEncoders){
+        this.config.encoders.offline[key] = _config.encoders.offline[key];
+      }else{
+        console.warn('Offline Encoder ',key,' not supported');
+      }
+    }
+
+    for (var key in _config.encoders.live) {
+      if(key in supportedEncoders){
+        this.config.encoders.live[key] = _config.encoders.live[key];
+      }else{
+        console.warn('Live Encoder ',key,' not supported');
+      }
+    }
+
+    if(Object.keys(this.config.encoders.offline) == 0){
+      console.warn('No offline encoders supported');
+    }
+
+    if(Object.keys(this.config.encoders.offline) == 0){
+      console.warn('No live encoders supported');
+    }
+
+    if(Object.keys(this.config.encoders.offline) == 0 && Object.keys(this.config.encoders.offline) == 0){
+      return false;
+    }else{
+      return true;
+    }
+  }
+    
+
 }
+  
+  
+
 
 module.exports = new Transcoder()

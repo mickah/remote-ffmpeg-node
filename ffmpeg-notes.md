@@ -105,6 +105,8 @@ MP4Box -dash 2000 -rap -frag-rap  -bs-switching no -profile "dashavc264:live" "o
 -use_timeline 1 -use_template 1 -single_file 1 -single_file_name audio1.mp4 \
 -f dash ./audio1.mpd
 
+# libx264 options
+https://sites.google.com/site/linuxencoding/x264-ffmpeg-mapping
 
 
 

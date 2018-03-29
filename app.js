@@ -3,15 +3,17 @@ const Ffmpeg = require('fluent-ffmpeg');
 const WebSocket = require('ws');
 const transcoder = require('./src/transcoder.js');
 
-if(!transcoder.initialize()){
-  console.log("Streamy transcoder failed to initialize");
-  exit(-1);
-}
-
-transcoder.transcodeOffline("tests/input.mp4","tests/output.mpd",0,
+transcoder.initialize("conf.json").then( function(success){
+  if(!success){
+    exit(1);
+  }
+  transcoder.transcodeOffline("tests/input.mp4","tests/output.mpd",0,
   function(msg){console.log(msg)},
   function(msg){console.log(msg)});
-
+},function(error){
+  console.log("Streamy transcoder failed to initialize: ",error);
+  exit(-1);
+});
 
 const wss = new WebSocket.Server({
   port: 8080

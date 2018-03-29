@@ -11,11 +11,14 @@ commands:
   "input":"folder1/foo.mp4",
   "mode":"offline"
   "output":"folder2/foo2.mpd",
-  "priority":0
+  "priority":0,
+  "resolution":1080,
+  "encoder":"x264"
 }
 - input: .mp4, mkv ...
 - output: .mpd
 - priority:[0-15]
+- encoder: "x264" (config)
 
 ## Transcode live
 {
