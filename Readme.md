@@ -89,8 +89,10 @@ Once you sent a process command you will receive "Status message" and a "Final m
 }
 ```
 
-## Notes
-This node is based on [node-fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg) sources modified (quickly) to run raw ffmpeg commands.
+## Liscences
+
+
+This node is based on [node-fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg) sources modified (quickly) to run raw ffmpeg commands. [liscence](licenses/node-fluent-ffmpeg/LICENSE.TXT)
 
 
 
