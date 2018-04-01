@@ -1,5 +1,5 @@
 # Remote ffmpeg node
-Node server proving remote ffmpeg services
+Node server providing remote ffmpeg services
 
 ## Installation
 ### Dependencies
