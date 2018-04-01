@@ -34,7 +34,7 @@ Once you sent a process command you will receive "Status message" and a "Final m
 ```json
 {
   "command":"ffmpeg",
-  "niceness" = 0,
+  "niceness":0,
   "args":[
     "-i",
     "tests/input.mp4",
@@ -72,20 +72,20 @@ Once you sent a process command you will receive "Status message" and a "Final m
 ```json
 {
   "progression":0.5,
-  "data":{...}
+  "data":{}
 }
 ```
 ## Final message
 ```json
 {
   "code":0,
-  "msg" : "some success msg"
-  "data":{...}
+  "msg" : "some success msg",
+  "data":{}
 }
 {
   "code":1,
-  "msg" : "some error"
-  "data":{...}
+  "msg" : "some error",
+  "data":{}
 }
 ```
 
