@@ -1,76 +1,116 @@
-var express = require('express')
-const Ffmpeg = require('fluent-ffmpeg');
+const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
-const transcoder = require('./src/transcoder.js');
+const fs = require('fs');
 
-transcoder.initialize("conf.json").then( function(success){
-  if(!success){
-    exit(1);
-  }
-  transcoder.transcodeOffline("tests/input.mp4","tests/output.mpd",0,
-  function(msg){console.log(msg)},
-  function(msg){console.log(msg)});
-},function(error){
-  console.log("Streamy transcoder failed to initialize: ",error);
-  exit(-1);
+const FfmpegCmd = require('./src/ffmpeg/ffmpeg.js');
+const Messages = require('./src/messages.js')
+
+// Create http and ws server
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// load configuration
+var config = {}
+try{
+  var confRaw = fs.readFileSync("conf.json");
+  config = JSON.parse(confRaw);
+}catch(error){
+  console.error("Unable to load configuration: ",error);
+  process.exit();
+}
+var workDir = config.working_dir;
+
+// Return all ffmpeg infos on this computer
+app.get('/ffmpeg_infos', function (req, res) {
+  var ffmpegcmd = FfmpegCmd();
+  ffmpegcmd.getInfos().then( (result) => {
+    res.send(result);
+  })
+  .catch( (err) => {
+    res.status(500);
+    res.send(err);
+  });  
 });
 
-const wss = new WebSocket.Server({
-  port: 8080
-});
-
+// Setup websocket to process ffmpeg commands
 wss.on('connection', function connection(ws) {
-  
+  var ffmpegProcess = null;
+  console.log('New ws connection');
+
+  ws.on('close', function close() {
+    if(ffmpegProcess != null){
+      ffmpegProcess.kill();
+    }
+  })
   ws.on('message', function incoming(message) {
-    console.log('received: %s', message);
+    //console.log('Received %s', message);
       //Parse command
       var jsonContent;
       try {  
         jsonContent = JSON.parse(message);
-        transcoder.processCommand(jsonContent, 
-          function(progression){sendAsJson(ws,progression);},
-          function(finalMessage){sendAsJson(ws,finalMessage);}
-        );
-      } catch (e) {
-        console.log("Error received",e,command);
-        
-        //ws.send('something', function ack(error) {
-          // If error is not defined, the send has been completed, otherwise the error
-          // object will indicate what failed.
-        //});
+        if(jsonContent.command === "ffmpeg" && !ffmpegProcess){
+          ffmpegProcess = FfmpegCmd();
+
+          //build option
+          var options = {};
+          if(jsonContent.niceness >= 0){
+            options.niceness = jsonContent.niceness;
+          }else{
+            options.niceness = 0;
+          }
+          
+          options.cwd = workDir,
+          options.captureStdout = false;
+
+          ffmpegProcess
+          .on('progress', function(progression){
+            sendAsJson(ws,new Messages.StatusMsg(progression.percent,progression));
+          })
+          .on('end', function(finalMessage){
+            sendAsJson(ws,new Messages.FinalMsg(0,finalMessage.message,finalMessage));
+          })
+          .on('error', function(finalMessage){
+            console.error("Ffmpeg error received",finalMessage.message);
+            sendAsJson(ws,new Messages.FinalMsg(1,finalMessage.message,""));
+          })
+          .exec(jsonContent.args, options);
+        }else if(jsonContent.command === "kill" && ffmpegProcess != null){
+          //ffmpegProcess
+          ffmpegProcess.kill(jsonContent.signal);
+        }else if(jsonContent.command === "set_priority" && ffmpegProcess != null){
+          //ffmpegProcess
+          ffmpegProcess.renice(jsonContent.niceness);
+        }else{
+          //Invalid command cancel process
+          if(ffmpegProcess != null){
+            ffmpegProcess.kill();
+            sendAsJson(ws,new Messages.FinalMsg(400,"Bad request invalid message while processing "+message));
+          }else{
+            sendAsJson(ws,new Messages.FinalMsg(400,"Bad request invalid control request while not processing "+message));
+          } 
+        }
+      } catch (err) {
+        console.error("Error received",err,command);
+        sendAsJson(ws,new Messages.FinalMsg(500,"Unexpected error :"+err));
       }
-  });
-  
-
-  try {
-    jsonContent = JSON.parse(message);
-    transcoder.processCommand(jsonContent,
-      function(progression){sendAsJson(ws,progression);},
-      function(finalMessage){sendAsJson(ws,finalMessage);}
-    );
-  }catch(error){
-    res.status(400);
-    res.send('Error parsing request: ',error);
-  }
-  
-  transcoder.transcode();
-
-  ws.send('something', function ack(error) {
-    // If error is not defined, the send has been completed, otherwise the error
-    // object will indicate what failed.
   });
 });
 
-
 function sendAsJson(ws,msg){
+  //console.log('sending ',msg);
   ws.send(JSON.stringify(msg), function ack(error) {
-    console.log('socket error',error);
     // If error is not defined, the send has been completed, otherwise the error
     // object will indicate what failed.
+    if(typeof error !== 'undefined'){
+      //console.log('Socket error',error);
+    }
+
   });
 }
 
-
+//// Web socket keep alive ////
 // Heart beats to detect broken connections
 
 function noop() {}
@@ -93,45 +133,7 @@ const interval = setInterval(function ping() {
   });
 }, 30000);
 
-////////
-//var app = express()
-
-//var server = http.createServer(app);
-
-//app.use(express.json());       // to support JSON-encoded bodies
-//app.use(express.urlencoded()); // to support URL-encoded bodies
-
-//app.use(cors());
-//app.use(express.static('public'));
-
-//app.get('/', function (req, res) {
-//	res.send('Hello World!')
-//})
-
-// POST
-//app.post('/transcode', function(req, res) {
-//  try {
-//    var fileName = req.body.filename, // file name to transcode
-//	      mode = req.body.mode,        //offline / online
-//	      priority = req.body.priority
-	      
-    // ...
-//  }catch(error){
-//    res.status(400);
-//    res.send('Error parsing request: ',error);
-//  }
-//});
-
-// 
-//app.get('/stats', function(req, res) {
-//  res.send('Not implemented!')
-  // ...
-//});
-
-//var server = app.listen(80, function () {
-
-//  var host = server.address().address
-//  var port = server.address().port
-
-//  console.log("Streamy node listening at http://%s:%s", host, port)
-//})
+//Start the server
+server.listen(config.port, config.address, function listening() {
+  console.log('Listening on %s:%d', server.address().address, server.address().port);
+});

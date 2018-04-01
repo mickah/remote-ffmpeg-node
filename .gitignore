@@ -64,3 +64,10 @@ node_modules/
 *.mp4
 *.mpd
 *.vscode
+*.mp4
+*.mpd
+*.mpg
+*.mkv
+*.vscode
+*.swp
+

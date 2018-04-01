@@ -7,8 +7,7 @@ Object.freeze(ERROR_CODES)
 module.exports.ERROR_CODES = ERROR_CODES;
 
 class StatusMsg {
-  constructor(code,progression,data){
-    this.code = code;
+  constructor(progression,data){
     this.progression = progression;
     this.data = data;
   }
