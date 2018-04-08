@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
+const si = require('systeminformation');
 
 const FfmpegCmd = require('./src/ffmpeg/ffmpeg.js');
 const Messages = require('./src/messages.js')
@@ -31,13 +32,41 @@ app.get('/ffmpeg_infos', function (req, res) {
   .catch( (err) => {
     res.status(500);
     res.send(err);
-  });  
+  });
+});
+
+// Return hw infos on this computer
+app.get('/hw_infos', function (req, res) {
+  Promise.all([si.cpu(),si.graphics(),si.osInfo()]).then( (values) => {
+      var output = {};
+      output.cpu = values[0];
+      output.graphics = values[1].controllers;
+      output.os = values[2];
+      res.send(output);
+    })
+    .catch( (err) => {
+      res.status(500);
+      res.send(err);
+    });   
+});
+
+// Return load infos on this computer
+app.get('/load_infos', function (req, res) {
+  si.currentLoad().then( (values) => {
+      res.send(values);
+    })
+    .catch( (err) => {
+      res.status(500);
+      res.send(err);
+    }); 
 });
 
 // Setup websocket to process ffmpeg commands
 wss.on('connection', function connection(ws) {
-  var ffmpegProcess = null;
   console.log('New ws connection');
+  var ffmpegProcess = null;
+  var beforeStartingKillSignal = null; // handle kill signal received before the ffmpeg command
+  var beforeStartingNiceness = null;  // handle priority request received before the ffmpeg command 
 
   ws.on('close', function close() {
     if(ffmpegProcess != null){
@@ -48,6 +77,7 @@ wss.on('connection', function connection(ws) {
     //console.log('Received %s', message);
       //Parse command
       var jsonContent;
+
       try {  
         jsonContent = JSON.parse(message);
         if(jsonContent.command === "ffmpeg" && !ffmpegProcess){
@@ -55,7 +85,9 @@ wss.on('connection', function connection(ws) {
 
           //build option
           var options = {};
-          if(jsonContent.niceness >= 0){
+          if(beforeStartingNiceness){
+            options.niceness = beforeStartingNiceness;
+          }else if(jsonContent.niceness){
             options.niceness = jsonContent.niceness;
           }else{
             options.niceness = 0;
@@ -76,20 +108,30 @@ wss.on('connection', function connection(ws) {
             sendAsJson(ws,new Messages.FinalMsg(1,finalMessage.message,""));
           })
           .exec(jsonContent.args, options);
-        }else if(jsonContent.command === "kill" && ffmpegProcess != null){
+
+          if(beforeStartingKillSignal){
+            ffmpegProcess.kill(beforeStartingKillSignal);
+          }
+        }else if(jsonContent.command === "kill"){
+          if(ffmpegProcess == null){
+            beforeStartingKillSignal = jsonContent.signal;
+          }else{
+            ffmpegProcess.kill(jsonContent.signal);
+          }
+        }else if(jsonContent.command === "set_priority"){
           //ffmpegProcess
-          ffmpegProcess.kill(jsonContent.signal);
-        }else if(jsonContent.command === "set_priority" && ffmpegProcess != null){
-          //ffmpegProcess
-          ffmpegProcess.renice(jsonContent.niceness);
+          if(ffmpegProcess == null){
+            beforeStartingNiceness = jsonContent.niceness;
+          }else{
+            ffmpegProcess.renice(jsonContent.niceness);
+          }
         }else{
           //Invalid command cancel process
           if(ffmpegProcess != null){
-            ffmpegProcess.kill();
-            sendAsJson(ws,new Messages.FinalMsg(400,"Bad request invalid message while processing "+message));
-          }else{
-            sendAsJson(ws,new Messages.FinalMsg(400,"Bad request invalid control request while not processing "+message));
-          } 
+            ffmpegProcess.kill(); 
+          }
+          console.warn("Bad request invalid message: "+message);
+          sendAsJson(ws,new Messages.FinalMsg(400,"Bad request invalid message: "+message));
         }
       } catch (err) {
         console.error("Error received",err,command);

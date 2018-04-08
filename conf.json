@@ -1,5 +1,5 @@
 {
     "working_dir":"./",
-    "port":8080,
+    "port":7000,
     "address":"0.0.0.0"
 }

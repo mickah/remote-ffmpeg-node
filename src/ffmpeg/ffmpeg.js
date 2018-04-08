@@ -1,8 +1,8 @@
 // Code based on fluent-ffmpeg library sources but modified to 
 // launch direct ffmpeg commands
 
-var util = require('util');
-var path = require('path');
+const util = require('util');
+const path = require('path');
 var EventEmitter = require('events').EventEmitter;
 
 //var utils = require('./node_modules/fluent-ffmpeg/lib/utils.js');
