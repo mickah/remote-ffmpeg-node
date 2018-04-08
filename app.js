@@ -81,7 +81,7 @@ wss.on('connection', function connection(ws) {
       try {  
         jsonContent = JSON.parse(message);
         if(jsonContent.command === "ffmpeg" && !ffmpegProcess){
-          ffmpegProcess = FfmpegCmd();
+          ffmpegProcess = new FfmpegCmd();
 
           //build option
           var options = {};
