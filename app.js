@@ -22,6 +22,7 @@ try{
   process.exit();
 }
 var workDir = config.working_dir;
+console.log("Using working directory: ",workDir)
 
 // Return all ffmpeg infos on this computer
 app.get('/ffmpeg_infos', function (req, res) {
@@ -61,6 +62,20 @@ app.get('/load_infos', function (req, res) {
     }); 
 });
 
+// Return streams infos of file given in the url
+app.get('/ffprobe/*', function (req, res) {
+  var filePath = req.params[0];
+  var ffmpegcmd = FfmpegCmd();
+  ffmpegcmd.ffprobe(workDir+"/"+filePath, function(err, metadata) {
+    if(err){
+      res.status(500);
+      res.send(err);
+    }else{
+      res.send(metadata);
+    }
+  });
+});
+
 // Setup websocket to process ffmpeg commands
 wss.on('connection', function connection(ws) {
   console.log('New ws connection');
@@ -80,6 +95,7 @@ wss.on('connection', function connection(ws) {
 
       try {  
         jsonContent = JSON.parse(message);
+
         if(jsonContent.command === "ffmpeg" && !ffmpegProcess){
           ffmpegProcess = new FfmpegCmd();
 
