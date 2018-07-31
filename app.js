@@ -13,9 +13,16 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // load configuration
+let config = "conf.json";
+if(process.argv.length <= 2){
+  console.log("Using default config");
+}else{
+  confPath = process.argv[2];
+}
+
 var config = {}
 try{
-  var confRaw = fs.readFileSync("conf.json");
+  var confRaw = fs.readFileSync(confPath);
   config = JSON.parse(confRaw);
 }catch(error){
   console.error("Unable to load configuration: ",error);

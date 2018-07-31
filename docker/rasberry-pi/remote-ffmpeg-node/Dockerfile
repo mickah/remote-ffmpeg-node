@@ -25,7 +25,7 @@ RUN echo "deb-src http://www.deb-multimedia.org stretch main non-free" >> /etc/a
 
 RUN apt-get update
 RUN apt-get install -y git nano wget mercurial build-essential pkg-config autoconf automake libtool yasm cmake
-RUN apt-get install -y --allow-unauthenticated libomxil-bellagio-dev libmp3lame-dev libass-dev libfreetype6-dev libtheora-dev libvorbis-dev texi2html zlib1g-dev libasound2-dev libbluray-dev libwebp-dev
+RUN apt-get install -y --allow-unauthenticated libomxil-bellagio-dev libmp3lame-dev libass-dev libfreetype6-dev libtheora-dev libvorbis-dev texi2html zlib1g-dev libasound2-dev libbluray-dev libwebp-dev libxvidcore-dev libzvbi-dev
 
 # Get sources
 RUN curl -Os "${SOFTWARE_VERSION_URL}"
