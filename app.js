@@ -66,7 +66,13 @@ app.get('/load_infos', function (req, res) {
 app.get('/ffprobe/*', function (req, res) {
   var filePath = req.params[0];
   var ffmpegcmd = FfmpegCmd();
-  ffmpegcmd.ffprobe(workDir+"/"+filePath, function(err, metadata) {
+  var file = "";
+  if(filePath[0] === '/'){
+    file = filePath;
+  }else{
+    file = workDir+"/"+filePath;
+  }
+  ffmpegcmd.ffprobe(file, function(err, metadata) {
     if(err){
       res.status(500);
       res.send(err);
@@ -112,15 +118,21 @@ wss.on('connection', function connection(ws) {
           options.cwd = workDir,
           options.captureStdout = false;
 
+          console.log("Launching command: ffmpeg "+jsonContent.args.join(" "));
           ffmpegProcess
           .on('progress', function(progression){
-            sendAsJson(ws,new Messages.StatusMsg(progression.percent,progression));
+            if(!progression.percent){
+              sendAsJson(ws,new Messages.StatusMsg(0,progression));
+            }else{
+              sendAsJson(ws,new Messages.StatusMsg(progression.percent,progression));
+            }
+            
           })
           .on('end', function(finalMessage){
             sendAsJson(ws,new Messages.FinalMsg(0,finalMessage.message,finalMessage));
           })
-          .on('error', function(finalMessage){
-            console.error("Ffmpeg error received",finalMessage.message);
+          .on('error', function(finalMessage, stdout, stderr){
+            console.error("Failed to transcode command ",finalMessage.message, stderr)
             sendAsJson(ws,new Messages.FinalMsg(1,finalMessage.message,""));
           })
           .exec(jsonContent.args, options);
