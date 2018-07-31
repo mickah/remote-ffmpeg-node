@@ -13,21 +13,25 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // load configuration
-let config = "conf.json";
+var config = {};
+
 if(process.argv.length <= 2){
   console.log("Using default config");
+  config.working_dir="./";
+  config.port=7000;
+  config.address="0.0.0.0";
 }else{
-  confPath = process.argv[2];
+  let confPath = process.argv[2];
+  try{
+    var confRaw = fs.readFileSync(confPath);
+    config = JSON.parse(confRaw);
+  }catch(error){
+    console.error("Unable to load configuration: ",error);
+    process.exit();
+  }
 }
 
-var config = {}
-try{
-  var confRaw = fs.readFileSync(confPath);
-  config = JSON.parse(confRaw);
-}catch(error){
-  console.error("Unable to load configuration: ",error);
-  process.exit();
-}
+
 var workDir = config.working_dir;
 console.log("Using working directory: ",workDir)
 
