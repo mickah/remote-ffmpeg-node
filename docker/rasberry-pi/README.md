@@ -11,7 +11,7 @@ sudo reboot
 ```
 # Run remote-ffmpeg-node
 ```
-docker run -dit -p 7000:7000 -v /volume1:/volume1 --restart unless-stopped remote_ffmpeg_node:3.4.4
+docker run -dit -p 7000:7000 -v /volume1:/volume1 --restart unless-stopped --device=/dev/vchiq  remote_ffmpeg_node:3.4.4
 ```
 
 #fstab rule
