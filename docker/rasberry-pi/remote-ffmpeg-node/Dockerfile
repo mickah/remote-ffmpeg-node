@@ -1,4 +1,7 @@
 # docker build -t streamy_ffmpeg:3.4.4 .
+# To test it
+# docker run --rm -p 7001:7001 -v /volume1:/volume1 --device=/dev/vchiq -it --entrypoint /bin/bash remote_ffmpeg_node:3.4.4
+
 FROM resin/rpi-raspbian:stretch
 ENV INITSYSTEM on
 
@@ -25,7 +28,7 @@ RUN echo "deb-src http://www.deb-multimedia.org stretch main non-free" >> /etc/a
 
 RUN apt-get update
 RUN apt-get install -y git nano wget mercurial build-essential pkg-config autoconf automake libtool yasm cmake
-RUN apt-get install -y --allow-unauthenticated libomxil-bellagio-dev libmp3lame-dev libass-dev libfreetype6-dev libtheora-dev libvorbis-dev texi2html zlib1g-dev libasound2-dev libbluray-dev libwebp-dev libxvidcore-dev libzvbi-dev
+RUN apt-get install -y --allow-unauthenticated libomxil-bellagio-dev libmp3lame-dev libass-dev libfreetype6-dev libtheora-dev libvorbis-dev texi2html zlib1g-dev libasound2-dev libbluray-dev libwebp-dev libxvidcore-dev libzvbi-dev libraspberrypi0
 
 # Get sources
 RUN curl -Os "${SOFTWARE_VERSION_URL}"
