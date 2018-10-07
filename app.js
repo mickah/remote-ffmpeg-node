@@ -87,6 +87,7 @@ app.get('/ffprobe/*', function (req, res) {
     if(err){
       res.status(500);
       res.send(err);
+      console.error("Failed to run ffprobe on ",file, " error: ",err);
     }else{
       res.send(metadata);
     }
