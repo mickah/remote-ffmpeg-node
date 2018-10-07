@@ -1,4 +1,4 @@
-# docker build -t remote_ffmpeg_node:3.4.4 .
+# docker build -t remote_ffmpeg_node:3.4.4-raspbian-stretch .
 FROM streamy_ffmpeg:3.4.4
 #ENV INITSYSTEM on
 

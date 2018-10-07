@@ -1,0 +1,25 @@
+# Build command
+# docker build -t remote_ffmpeg_node:3.4.4-ubuntu-16.04 .
+#
+# Run command
+# docker run --rm -p 7000:7000 -v /volume1:/volume1 -it --entrypoint /bin/bash remote_ffmpeg_node:3.4.4-ubuntu-16.04
+
+FROM streamy_ffmpeg:3.4.4-ubuntu-16.04
+#ENV INITSYSTEM on
+
+EXPOSE 7000
+#ENTRYPOINT ["node", "/opt/remote-ffmpeg-node/app.js"]
+ENTRYPOINT ["/bin/bash"]
+
+WORKDIR /opt/
+
+RUN apt-get update -y && apt-get upgrade -y
+
+# Install node
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+ apt-get install -y nodejs
+
+RUN git clone --depth 1 https://github.com/mickah/remote-ffmpeg-node.git && \
+ cd remote-ffmpeg-node && \
+ npm install
+
