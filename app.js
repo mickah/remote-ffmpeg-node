@@ -130,15 +130,24 @@ wss.on('connection', function connection(ws) {
           options.cwd = workDir,
           options.captureStdout = false;
 
+          var minTimeBetweenProgressions = 0;
+          var lastProgression = null;
+          if(jsonContent.min_time_btw_progressions){ // in msec
+            minTimeBetweenProgressions = jsonContent.min_time_btw_progressions;
+          }
+
           console.log("Launching command: ffmpeg "+jsonContent.args.join(" "));
           ffmpegProcess
           .on('progress', function(progression){
-            if(!progression.percent){
-              sendAsJson(ws,new Messages.StatusMsg(0,progression));
-            }else{
-              sendAsJson(ws,new Messages.StatusMsg(progression.percent,progression));
+            let currentTime = new Date().getTime()
+            if(lastProgression == null || (currentTime - lastProgression)>minTimeBetweenProgressions){
+              if(!progression.percent){
+                sendAsJson(ws,new Messages.StatusMsg(0,progression));
+              }else{
+                sendAsJson(ws,new Messages.StatusMsg(progression.percent,progression));
+              }
+              lastProgression = currentTime
             }
-            
           })
           .on('end', function(finalMessage){
             sendAsJson(ws,new Messages.FinalMsg(0,finalMessage.message,finalMessage));
